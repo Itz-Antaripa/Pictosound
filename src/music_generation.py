@@ -6,17 +6,45 @@ import io
 import os
 from dotenv import load_dotenv
 import random
+from openai import OpenAI
+
+client = OpenAI()
 
 load_dotenv()
 
 ELEVEN_LABS_API_KEY = os.getenv('ELEVEN_LABS_API_KEY')
 
 
-def generate_lyrics(theme, mood):
-    # Use OpenAI to generate lyrics based on the theme and mood
-    # This is a placeholder. In a real implementation, you'd make an API call to OpenAI here.
-    return f'''This is a {mood} song about {theme}\nThe colors swirl and dance\nIn a rhythm of chance\nEchoes of 
-emotion in every glance'''
+def generate_lyrics(theme, mood, instrument, description):
+    
+    conversation = [
+        {
+            "role": "system",
+            "content": '''You are a world famous musician and art enthusiast. You will be given with theme, mood, instrument, and description.
+Based on that you need to generate lyrics for 30 sec music along with base notes. Utilize the theme, mood and instrument provided.
+Return the output in json format:
+{
+    "lyrics": "theme that explains the visual art",
+    "base_notes": [base notes of the 30 sec music in list],
+}
+'''
+        },
+        {
+            "role": "user", 
+            "content": "Understand the theme, mood, instrument, description and generate the lyrics and base_notes accordingly. Return in json format."
+        },
+    ]
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=conversation,
+            temperature=0.5,
+            top_p=1
+        )
+        return response.choices[0].message['content']
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
 
 
 def generate_melody(mood):
@@ -119,4 +147,13 @@ if __name__ == "__main__":
     #     print(json.dumps({"output": output_path, "lyrics": lyrics}))
     # else:
     #     print(json.dumps({"error": "Failed to generate music"}))
-    print(generate_lyrics("nature", "peace"))
+    payload = {
+        "theme": "Abstract Geometric Expression",
+        "mood": "Vibrant and Dynamic",
+        "instrument": "Electric Guitar",
+        "description": "This artwork features a striking array of geometric shapes and vivid colors, forming an abstract composition. It appears to incorporate stylized human and possibly natural forms, interwoven with patterns and lines that suggest movement and energy. The use of bright colors such as orange, blue, and pink adds to the vibrant and dynamic feel of the piece. The complexity and the boldness of the work convey a sense of intensity and liveliness."
+    }
+    print(generate_lyrics(payload['theme'], 
+                          payload['mood'], 
+                          payload['instrument'], 
+                          payload['description']))
